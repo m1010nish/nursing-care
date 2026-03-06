@@ -85,30 +85,37 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Start server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`\n🚀 Server running in ${process.env.NODE_ENV || 'development'} mode`);
-    console.log(`📡 Listening on port ${PORT}`);
-    console.log(`🌐 API URL: http://localhost:${PORT}`);
-    console.log(`\n📚 Available endpoints:`);
-    console.log(`   - POST   /api/auth/register    (Register new patient)`);
-    console.log(`   - POST   /api/auth/login       (Login user)`);
-    console.log(`   - GET    /api/auth/me          (Get current user)`);
-    console.log(`   - POST   /api/appointments     (Create appointment)`);
-    console.log(`   - GET    /api/appointments/my  (Get my appointments)`);
-    console.log(`   - GET    /api/appointments     (Get all - staff only)`);
-    console.log(`   - PATCH  /api/appointments/:id/status (Update status - staff)`);
-    console.log(`   - POST   /api/payments/create-order   (Create payment order)`);
-    console.log(`   - POST   /api/payments/verify         (Verify payment)`);
-    console.log(`   - POST   /api/payments/refund/:id     (Refund payment)`);
-    console.log(`   - GET    /api/payments/:id/status     (Get payment status)`);
-    console.log(`\n✨ Ready to accept connections!\n`);
-});
+// Start server locally
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`\n🚀 Server running in ${process.env.NODE_ENV || 'development'} mode`);
+        console.log(`📡 Listening on port ${PORT}`);
+        console.log(`🌐 API URL: http://localhost:${PORT}`);
+        console.log(`\n📚 Available endpoints:`);
+        console.log(`   - POST   /api/auth/register    (Register new patient)`);
+        console.log(`   - POST   /api/auth/login       (Login user)`);
+        console.log(`   - GET    /api/auth/me          (Get current user)`);
+        console.log(`   - POST   /api/appointments     (Create appointment)`);
+        console.log(`   - GET    /api/appointments/my  (Get my appointments)`);
+        console.log(`   - GET    /api/appointments     (Get all - staff only)`);
+        console.log(`   - PATCH  /api/appointments/:id/status (Update status - staff)`);
+        console.log(`   - POST   /api/payments/create-order   (Create payment order)`);
+        console.log(`   - POST   /api/payments/verify         (Verify payment)`);
+        console.log(`   - POST   /api/payments/refund/:id     (Refund payment)`);
+        console.log(`   - GET    /api/payments/:id/status     (Get payment status)`);
+        console.log(`\n✨ Ready to accept connections!\n`);
+    });
+}
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
     console.error('❌ Unhandled Promise Rejection:', err);
     // Close server & exit process
-    process.exit(1);
+    if (process.env.NODE_ENV !== 'production') {
+        process.exit(1);
+    }
 });
+
+// Export the Express app for Vercel Serverless Functions
+module.exports = app;
