@@ -3,6 +3,7 @@ const router = express.Router();
 const { body } = require('express-validator');
 const authController = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
+const { authLimiter, otpLimiter } = require('../middleware/rateLimiter');
 
 /**
  * @route   POST /api/auth/register
@@ -11,6 +12,7 @@ const { protect } = require('../middleware/auth');
  */
 router.post(
     '/register',
+    authLimiter, // Apply rate limiting
     [
         body('fullName')
             .trim()
@@ -35,6 +37,7 @@ router.post(
  */
 router.post(
     '/login',
+    authLimiter, // Apply rate limiting
     [
         body('email').isEmail().withMessage('Please provide a valid email'),
         body('password').notEmpty().withMessage('Password is required'),
@@ -49,6 +52,7 @@ router.post(
  */
 router.post(
     '/verify-otp',
+    authLimiter, // Apply rate limiting
     [
         body('email').isEmail().withMessage('Please provide a valid email'),
         body('otp')
@@ -68,6 +72,7 @@ router.post(
  */
 router.post(
     '/resend-otp',
+    otpLimiter, // Apply strict OTP rate limiting (3 per minute)
     [
         body('email').isEmail().withMessage('Please provide a valid email'),
         body('purpose')

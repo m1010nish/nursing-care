@@ -1,7 +1,14 @@
 require('dotenv').config();
+
+// Validate environment variables before starting
+const validateEnv = require('./config/validateEnv');
+validateEnv();
+
 const express = require('express');
 const cors = require('cors');
+const mongoose = require('mongoose');
 const connectDB = require('./config/database');
+const { apiLimiter } = require('./middleware/rateLimiter');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -48,20 +55,38 @@ if (process.env.NODE_ENV === 'development') {
     });
 }
 
-// Routes
+// Health check endpoint (no rate limiting)
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        success: true,
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+        environment: process.env.NODE_ENV || 'development',
+    });
+});
+
+// Root endpoint
 app.get('/', (req, res) => {
     res.json({
         success: true,
         message: 'Healthcare Appointment Booking API',
         version: '1.0.0',
         endpoints: {
+            health: '/health',
             auth: '/api/auth',
             appointments: '/api/appointments',
             admin: '/api/admin',
+            payments: '/api/payments',
         },
     });
 });
 
+// Apply rate limiting to all API routes
+app.use('/api', apiLimiter);
+
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/admin', adminRoutes);
@@ -72,6 +97,7 @@ app.use((req, res) => {
     res.status(404).json({
         success: false,
         message: 'Route not found',
+        path: req.path,
     });
 });
 
@@ -93,12 +119,15 @@ if (process.env.NODE_ENV !== 'production') {
         console.log(`📡 Listening on port ${PORT}`);
         console.log(`🌐 API URL: http://localhost:${PORT}`);
         console.log(`\n📚 Available endpoints:`);
-        console.log(`   - POST   /api/auth/register    (Register new patient)`);
-        console.log(`   - POST   /api/auth/login       (Login user)`);
-        console.log(`   - GET    /api/auth/me          (Get current user)`);
-        console.log(`   - POST   /api/appointments     (Create appointment)`);
-        console.log(`   - GET    /api/appointments/my  (Get my appointments)`);
-        console.log(`   - GET    /api/appointments     (Get all - staff only)`);
+        console.log(`   - GET    /health                   (Health check)`);
+        console.log(`   - POST   /api/auth/register        (Register new patient)`);
+        console.log(`   - POST   /api/auth/login           (Login user)`);
+        console.log(`   - POST   /api/auth/verify-otp      (Verify OTP)`);
+        console.log(`   - POST   /api/auth/resend-otp      (Resend OTP)`);
+        console.log(`   - GET    /api/auth/me              (Get current user)`);
+        console.log(`   - POST   /api/appointments         (Create appointment)`);
+        console.log(`   - GET    /api/appointments/my      (Get my appointments)`);
+        console.log(`   - GET    /api/appointments         (Get all - staff only)`);
         console.log(`   - PATCH  /api/appointments/:id/status (Update status - staff)`);
         console.log(`   - POST   /api/payments/create-order   (Create payment order)`);
         console.log(`   - POST   /api/payments/verify         (Verify payment)`);

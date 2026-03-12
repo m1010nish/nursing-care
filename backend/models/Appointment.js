@@ -105,8 +105,11 @@ const appointmentSchema = new mongoose.Schema(
     }
 );
 
-// Index for better query performance
-appointmentSchema.index({ patient: 1, date: 1 });
-appointmentSchema.index({ status: 1 });
+// Indexes for better query performance
+appointmentSchema.index({ patient: 1, date: -1 }); // Patient's appointments sorted by date
+appointmentSchema.index({ status: 1, date: -1 }); // Appointments by status and date
+appointmentSchema.index({ assignedStaff: 1, status: 1 }); // Staff's assigned appointments
+appointmentSchema.index({ paymentStatus: 1 }); // Payment status queries
+appointmentSchema.index({ date: 1, time: 1 }); // Scheduling conflicts check
 
 module.exports = mongoose.model('Appointment', appointmentSchema);

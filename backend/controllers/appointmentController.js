@@ -20,6 +20,15 @@ exports.createAppointment = async (req, res) => {
             });
         }
 
+        // Check if user profile is completed
+        if (!req.user.profileCompleted) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please complete your profile before booking an appointment',
+                code: 'PROFILE_INCOMPLETE',
+            });
+        }
+
         const {
             currentDiagnosis, medicalHistory, allergies, currentMedications,
             recentSurgeries, mobilityStatus, specialEquipmentNeeds,
@@ -158,14 +167,18 @@ exports.getAppointmentById = async (req, res) => {
         }
 
         // Check if staff is authorized to view this appointment
-        if (
-            req.user.role === 'staff' &&
-            (!appointment.assignedStaff || !appointment.assignedStaff.some(staff => staff._id.toString() === req.user._id.toString()))
-        ) {
-            return res.status(403).json({
-                success: false,
-                message: 'Not authorized: You are not assigned to this appointment',
-            });
+        if (req.user.role === 'staff') {
+            // assignedStaff is an array of ObjectIds
+            const assignedStaffIds = (appointment.assignedStaff || []).map(staff =>
+                staff._id ? staff._id.toString() : staff.toString()
+            );
+
+            if (!assignedStaffIds.includes(req.user._id.toString())) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Not authorized: You are not assigned to this appointment',
+                });
+            }
         }
 
         res.status(200).json({

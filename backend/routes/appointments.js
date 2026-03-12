@@ -5,6 +5,53 @@ const appointmentController = require('../controllers/appointmentController');
 const { protect, authorize } = require('../middleware/auth');
 
 /**
+ * Custom validator for appointment date - must be a valid future date
+ */
+const validateAppointmentDate = (value) => {
+    // Check format YYYY-MM-DD
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        throw new Error('Date must be in YYYY-MM-DD format');
+    }
+
+    const appointmentDate = new Date(value);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day
+
+    // Check if date is valid
+    if (isNaN(appointmentDate.getTime())) {
+        throw new Error('Invalid date');
+    }
+
+    // Check if date is in the future
+    if (appointmentDate < today) {
+        throw new Error('Appointment date must be today or in the future');
+    }
+
+    return true;
+};
+
+/**
+ * Custom validator for appointment time - must be in HH:MM format
+ */
+const validateAppointmentTime = (value) => {
+    if (!/^\d{2}:\d{2}$/.test(value)) {
+        throw new Error('Time must be in HH:MM format (24-hour)');
+    }
+
+    const [hours, minutes] = value.split(':').map(Number);
+
+    if (hours < 0 || hours > 23) {
+        throw new Error('Hours must be between 00 and 23');
+    }
+
+    if (minutes < 0 || minutes > 59) {
+        throw new Error('Minutes must be between 00 and 59');
+    }
+
+    return true;
+};
+
+/**
  * All routes require authentication
  */
 router.use(protect);
@@ -20,12 +67,10 @@ router.post(
     [
         body('date')
             .trim()
-            .matches(/^\d{4}-\d{2}-\d{2}$/)
-            .withMessage('Date must be in YYYY-MM-DD format'),
+            .custom(validateAppointmentDate),
         body('time')
             .trim()
-            .matches(/^\d{2}:\d{2}$/)
-            .withMessage('Time must be in HH:MM format'),
+            .custom(validateAppointmentTime),
         body('services')
             .isArray({ min: 1 })
             .withMessage('Please select at least one nursing service'),

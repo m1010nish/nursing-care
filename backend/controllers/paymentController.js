@@ -2,9 +2,7 @@ const { validationResult } = require('express-validator');
 const Payment = require('../models/Payment');
 const Appointment = require('../models/Appointment');
 const razorpayService = require('../services/razorpayService');
-
-// Default consultation fee in paise (₹500 = 50000 paise)
-const DEFAULT_CONSULTATION_FEE = 50000;
+const { CONSULTATION_FEE_PAISE } = require('../config/constants');
 
 /**
  * @desc    Create a Razorpay order for an appointment
@@ -71,7 +69,7 @@ exports.createOrder = async (req, res) => {
             });
         }
 
-        const amount = appointment.amount || DEFAULT_CONSULTATION_FEE;
+        const amount = appointment.amount || CONSULTATION_FEE_PAISE;
 
         // Razorpay limits receipt length to 40 characters. 
         // We trim the appointmentId and timestamp to fit.
