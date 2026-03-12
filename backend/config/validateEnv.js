@@ -52,12 +52,31 @@ const validateEnv = () => {
     // Validate JWT_SECRET strength
     if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
         console.warn('\n⚠️  WARNING: JWT_SECRET is too short. Use at least 32 characters for security.');
+        console.warn(`   Current length: ${process.env.JWT_SECRET.length}`);
     }
 
     // Validate weak default values
-    if (process.env.JWT_SECRET && process.env.JWT_SECRET.includes('your-super-secret')) {
+    const weakPatterns = [
+        'your-super-secret',
+        'change-this',
+        'default-secret',
+        'secret123',
+        'test-secret',
+    ];
+
+    const hasWeakSecret = weakPatterns.some(pattern =>
+        process.env.JWT_SECRET && process.env.JWT_SECRET.toLowerCase().includes(pattern)
+    );
+
+    if (hasWeakSecret) {
         console.error('\n❌ CRITICAL: JWT_SECRET contains default/weak value. Change it immediately!');
+        console.error('   JWT_SECRET should be a long random string, not a common phrase.');
         process.exit(1);
+    }
+
+    // Log JWT_SECRET strength (only in development)
+    if (process.env.NODE_ENV === 'development' && process.env.JWT_SECRET && process.env.JWT_SECRET.length >= 32) {
+        console.log(`\n🔐 JWT_SECRET strength: ${process.env.JWT_SECRET.length} characters (Strong ✅)`);
     }
 
     // Check if RAZORPAY_WEBHOOK_SECRET is missing
