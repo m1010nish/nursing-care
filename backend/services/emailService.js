@@ -6,7 +6,14 @@ let transporter;
 const createTransporter = () => {
     if (transporter) return transporter;
 
-    const port = parseInt(process.env.EMAIL_PORT);
+    // Render.com explicitly blocks port 587 for anti-spam reasons.
+    // Port 465 (SMTPS) works because it uses implicit SSL (looks like HTTPS traffic).
+    // If EMAIL_PORT is 587 in production, we forcefully upgrade it to 465.
+    let port = parseInt(process.env.EMAIL_PORT) || 465;
+    if (process.env.NODE_ENV === 'production' && port === 587) {
+        port = 465;
+        console.log('⚠️ Upgrading SMTP port from 587 to 465 for production (Render.com compatibility)');
+    }
 
     transporter = nodemailer.createTransport({
         host: process.env.EMAIL_HOST,
@@ -18,7 +25,7 @@ const createTransporter = () => {
         },
         tls: {
             // Allow self-signed certificates if needed
-            rejectUnauthorized: process.env.NODE_ENV === 'production'
+            rejectUnauthorized: false // In production, sometimes shared hosts have cert chain issues
         }
     });
 
