@@ -154,11 +154,26 @@ const sendOTPEmail = async (email, otp, purpose) => {
         console.log('✅ Email sent:', info.messageId);
         return { success: true, messageId: info.messageId };
     } catch (error) {
-        console.error('❌ Email sending failed:');
+        console.error('\n❌ Email sending failed:');
         console.error('   Error code:', error.code);
         console.error('   Error message:', error.message);
         if (error.code === 'EAUTH' || error.responseCode === 535) {
             console.error('   ⚠️  SMTP Authentication failed — check EMAIL_USER and EMAIL_PASSWORD in environment variables');
+        } else if (error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
+            console.error('\n   🚨 RENDER.COM FREE TIER DETECTED 🚨');
+            console.error('   Render explicitly blocks ALL outbound SMTP ports (25, 465, 587) on the Free plan.');
+            console.error('   Hostinger emails cannot be sent directly from Render Free tier.');
+            console.error('   To fix this for production, you must either:');
+            console.error('   1. Upgrade to a paid Render plan');
+            console.error('   2. Use an HTTP-based email API like Resend, SendGrid, or Postmark (port 443)\n');
+            
+            // Print the OTP so the developer can still test the flow!
+            console.log('╔════════════════════════════════════════════════════════════╗');
+            console.log('║           🛠️  DEVELOPMENT FALLBACK - OTP CODE             ║');
+            console.log('╠════════════════════════════════════════════════════════════╣');
+            console.log(`║  Email:   ${email.padEnd(46)} ║`);
+            console.log(`║  OTP:     ${otp.padEnd(46)} ║`);
+            console.log('╚════════════════════════════════════════════════════════════╝\n');
         }
         return { success: false, error: error.message };
     }
