@@ -75,24 +75,27 @@ exports.register = async (req, res) => {
             expiresAt,
         });
 
-        // Send OTP email
-        const emailResult = await sendOTPEmail(email, otp, 'registration');
-
-        if (!emailResult.success) {
-            // If email fails, delete the user and return error
-            await User.findByIdAndDelete(user._id);
-            return res.status(500).json({
-                success: false,
-                message: 'Failed to send verification email. Please try again.',
-            });
-        }
-
+        // Respond immediately — do NOT await email sending.
+        // SMTP can be slow (Hostinger auth can take 10-20s from Render servers),
+        // which would cause the 15s client timeout to fire before we respond.
         res.status(201).json({
             success: true,
             message: 'OTP sent to your email. Please verify to complete registration.',
             userId: user._id,
             email: user.email,
             requiresVerification: true,
+        });
+
+        // Send OTP email in background (after response is already sent)
+        sendOTPEmail(email, otp, 'registration').then((emailResult) => {
+            if (!emailResult.success) {
+                console.error(`Registration email failed for ${email}:`, emailResult.error);
+                // NOTE: We don't delete the user here — they can use resend-otp to get a new code
+            } else {
+                console.log(`Registration OTP email sent successfully to ${email}`);
+            }
+        }).catch((err) => {
+            console.error(`Unexpected error sending registration email to ${email}:`, err.message);
         });
     } catch (error) {
         console.error('Registration error:', error);
@@ -231,19 +234,20 @@ exports.resendOTP = async (req, res) => {
             expiresAt,
         });
 
-        // Send OTP email
-        const emailResult = await sendOTPEmail(email, otp, purpose);
-
-        if (!emailResult.success) {
-            return res.status(500).json({
-                success: false,
-                message: 'Failed to send verification email. Please try again.',
-            });
-        }
-
+        // Respond immediately — send email in background so SMTP latency doesn't timeout the client
         res.status(200).json({
             success: true,
             message: 'New OTP sent to your email',
+        });
+
+        sendOTPEmail(email, otp, purpose).then((emailResult) => {
+            if (!emailResult.success) {
+                console.error(`Resend OTP email failed for ${email}:`, emailResult.error);
+            } else {
+                console.log(`Resend OTP email sent successfully to ${email}`);
+            }
+        }).catch((err) => {
+            console.error(`Unexpected error sending resend OTP email to ${email}:`, err.message);
         });
     } catch (error) {
         console.error('Resend OTP error:', error);
