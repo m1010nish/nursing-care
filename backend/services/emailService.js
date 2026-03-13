@@ -147,7 +147,12 @@ const sendOTPEmail = async (email, otp, purpose) => {
         console.log('✅ Email sent:', info.messageId);
         return { success: true, messageId: info.messageId };
     } catch (error) {
-        console.error('❌ Email error:', error);
+        console.error('❌ Email sending failed:');
+        console.error('   Error code:', error.code);
+        console.error('   Error message:', error.message);
+        if (error.code === 'EAUTH' || error.responseCode === 535) {
+            console.error('   ⚠️  SMTP Authentication failed — check EMAIL_USER and EMAIL_PASSWORD in environment variables');
+        }
         return { success: false, error: error.message };
     }
 };

@@ -18,9 +18,9 @@ const DB_RETRY_DELAY_MS = 5000;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const RATE_LIMIT_MAX_REQUESTS = 100; // Max requests per window
 
-// Auth-specific rate limits (stricter)
+// Auth-specific rate limits
 const AUTH_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const AUTH_RATE_LIMIT_MAX_REQUESTS = 10; // Max auth requests per window
+const AUTH_RATE_LIMIT_MAX_REQUESTS = 30; // Max auth requests per window (register + OTP verify + retries need headroom)
 
 module.exports = {
     // Payment
